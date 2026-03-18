@@ -1,15 +1,38 @@
-from fastapi import FastAPI, UploadFile
-from rag_pipeline import process_document, ask_question
+# main.py
+from fastapi import FastAPI
+from pydantic import BaseModel
+from rag_pipeline import RAGPipeline
+from ai.engine import CloudAI, OllamaAI
+import os
 
-app = FastAPI()
+app = FastAPI(title="DocuQuery AI")
 
-@app.post("/upload")
-async def upload_document(file: UploadFile):
-    content = await file.read()
-    process_document(content)
-    return {"message": "Document processed"}
+# Initialize the pipeline once
+pipeline = RAGPipeline()
 
-@app.post("/ask")
-async def ask(query: str):
-    answer = ask_question(query)
-    return {"answer": answer}
+# Initialize AI backend based on env variable
+backend = os.getenv("AI_BACKEND", "CLOUD").upper()
+
+if backend == "OLLAMA":
+    ai = OllamaAI()
+else:
+    ai = CloudAI()
+
+class QueryRequest(BaseModel):
+    query: str
+
+@app.post("/query")
+def query_docs(request: QueryRequest):
+    # 1. Get search results from RAG pipeline (optional context)
+    search_results = pipeline.search(request.query)
+
+    # 2. You can format or combine search_results as needed for AI input
+    # For now, let's keep it simple: just pass the original query to AI
+    ai_response = ai.generate_text(request.query)
+
+    # 3. Return only the AI response as clean JSON
+    return {"response": ai_response}
+
+@app.get("/")
+def root():
+    return {"message": "Welcome to DocuQuery AI! Use /query to search your documents."}

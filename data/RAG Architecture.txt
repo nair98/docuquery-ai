@@ -1,0 +1,2 @@
+RAG - Retrieved Augmentented Generation
+User prompts the query. the query gets passed to the vector database, from the embeddings in the database it goes through a semantic and similarity search process after which it goes to the LLM model and these models produces response and provides in the form of output to the users.
